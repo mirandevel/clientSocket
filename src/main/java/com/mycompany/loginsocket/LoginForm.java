@@ -9,12 +9,15 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
  * @author Usuario
  */
-public class LoginForm extends javax.swing.JFrame {
+public class LoginForm extends javax.swing.JFrame implements ResponseListener{
 
     ClientSocket clientSocket;
 
@@ -23,7 +26,9 @@ public class LoginForm extends javax.swing.JFrame {
      */
     public LoginForm(int port, String ip) {
         initComponents();
-        clientSocket = new ClientSocket(port, ip);
+        clientSocket = ClientSocket.getInstance(port, ip);
+        clientSocket.addListenner(this);
+        clientSocket.start();
 
     }
 
@@ -81,9 +86,16 @@ public class LoginForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
-        String email = this.email.getText();
-        String password = this.password.getText();
-        clientSocket.sendLogin(email, password);
+        JSONObject obj = new JSONObject();
+        obj.put("action", "login");
+        obj.put("email", this.email.getText());
+        obj.put("password", this.password.getText());
+        
+        try {
+            clientSocket.send(obj.toJSONString());
+        } catch (IOException ex) {
+            System.out.println("Inténtelo otra vez");
+        }
 
     }//GEN-LAST:event_submitMouseClicked
 
@@ -127,4 +139,24 @@ public class LoginForm extends javax.swing.JFrame {
     private javax.swing.JTextField password;
     private javax.swing.JButton submit;
     // End of variables declaration//GEN-END:variables
+
+    @Override
+    public void onResponse(ResponseEvent event) {
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
+            boolean success=(boolean) jsonResult.get("success");
+            if(success){
+                //BoardForm boardForm=new BoardForm(args[0]), args[1]);
+                //boardForm.setVisible(true);
+                clientSocket.removeListenner(this);
+                this.dispose();
+                System.out.println("Inicio exitoso");
+            }else{
+                System.out.println("Intentelo otra vez");
+            }  
+        } catch (ParseException ex) {
+           System.out.println("Intentelo otra vez");
+        }
+    }
 }
