@@ -5,77 +5,57 @@
  */
 package com.mycompany.loginsocket;
 
+import com.google.gson.Gson;
+import com.mycompany.loginsocket.controllers.DiceController;
+import com.mycompany.loginsocket.tablero.Board;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import org.json.simple.JSONObject;
 
 /**
  *
  * @author Usuario
  */
 public class BoardForm extends javax.swing.JFrame implements ResponseListener {
-
     /**
      * Creates new form BoardForm
      */
     ClientSocket clientSocket;
     String stringBoard;
+    Board board;
+    DiceController diceController;
 
     public BoardForm() {
         initComponents();
-        // clientSocket = ClientSocket.getInstance(port, ip);
-        //clientSocket.addListenner(this);
-        stringBoard = "1,1,1,1,1,1,0,0,0,2,2,2,2,2,2,"
-                + "1,0,0,0,0,1,0,2,2,2,0,0,0,0,2,"
-                + "1,0,1,1,0,1,0,2,0,2,0,2,2,0,2,"
-                + "1,0,1,1,0,1,0,2,0,2,0,2,2,0,2,"
-                + "1,0,0,0,0,1,0,2,0,2,0,0,0,0,2,"
-                + "1,1,1,1,1,1,0,2,0,2,2,2,2,2,2,"
-                + "0,1,0,0,0,0,5,5,5,0,0,0,0,0,0,"
-                + "0,1,1,1,1,1,5,5,5,4,4,4,4,4,4,"
-                + "0,0,0,0,0,0,5,5,5,0,0,0,0,4,0,"
-                + "3,3,3,3,3,3,0,0,0,4,4,4,4,4,4,"
-                + "3,0,0,0,0,3,0,4,4,4,0,0,0,0,4,"
-                + "3,0,3,3,0,3,0,4,0,4,0,4,4,0,4,"
-                + "3,0,3,3,0,3,0,4,0,4,0,4,4,0,4,"
-                + "3,0,0,0,0,3,0,4,0,4,0,0,0,0,4,"
-                + "3,3,3,3,3,3,0,4,0,4,4,4,4,4,4";
+        diceController=new DiceController(dice);
 
-    }
-
-    public void paint(Graphics g) {
-      /*      g.drawRect(50, 50, 450, 450);
-        for (int i = 50; i <= 500; i += 30) {
-            g.drawLine(i, 50, i, 500);
+        clientSocket = Init.clientSocket;
+        JSONObject obj = new JSONObject();
+        obj.put("action", "board");
+        try {
+            clientSocket.send(obj.toJSONString());
+        } catch (IOException ex) {
+            System.out.println("Inténtelo otra vez");
         }
         
-        for (int i = 50; i <= 500; i += 30) {
-            g.drawLine(50, i, 500, i);
-        }
-         */
-      //g.fillRect(100 , 100, 100*2, 100*2);
-        int fil = 1;
-        int col = 1;
-        String[] board = stringBoard.split(",");
-        for (int i = 1; i <= board.length; i++) {                
-            if (board[i - 1].compareTo("1") == 0) g.setColor(Color.yellow);
-                
-            if (board[i - 1].compareTo("2") == 0) g.setColor(Color.BLUE);
-            if (board[i - 1].compareTo("3") == 0) g.setColor(Color.GREEN);
-            if (board[i - 1].compareTo("4") == 0) g.setColor(Color.RED);
-            if (board[i - 1].compareTo("0") == 0) g.setColor(Color.WHITE);
-            
-                            
-            g.fillRect(50+30 * col,50+ 30 * fil, 30, 30);
+        clientSocket.addListenner(this);
 
-            col++;
-            if (i % 15 == 0) {
-                fil++;
-                col = 1;
-            }
-        }
-
-        //g.fillRect(100 , 100, 400, 400);
+        //System.out.println(Arrays.toString(arr));
     }
+ 
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -86,21 +66,53 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        dice = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        dice.setIcon(new javax.swing.JLabel() {
+            public javax.swing.Icon getIcon() {
+                try {
+                    return new javax.swing.ImageIcon(
+                        new java.net.URL("file:/D:/UNIVERSIDAD/2020-3/Distribuidos/tareas/LoginSocket/src/main/java/com/mycompany/loginsocket/images/dice_1.png")
+                    );
+                } catch (java.net.MalformedURLException e) {
+                }
+                return null;
+            }
+        }.getIcon());
+        dice.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        dice.setMaximumSize(new java.awt.Dimension(45, 40));
+        dice.setMinimumSize(new java.awt.Dimension(30, 30));
+        dice.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                diceMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 567, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(140, 140, 140)
+                .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(459, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 557, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(615, Short.MAX_VALUE)
+                .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(68, 68, 68))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void diceMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_diceMouseClicked
+        diceController.launch();
+    }//GEN-LAST:event_diceMouseClicked
 
     /**
      * @param args the command line arguments
@@ -139,8 +151,10 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
 
     @Override
     public void onResponse(ResponseEvent event) {
-
+            System.out.println(event.getResponse());
+            board=new Board(event.getResponse(),this.getGraphics());  
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton dice;
     // End of variables declaration//GEN-END:variables
 }

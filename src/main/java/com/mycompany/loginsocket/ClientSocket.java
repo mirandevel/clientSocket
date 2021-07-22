@@ -66,7 +66,7 @@ public class ClientSocket extends Thread {
      while(true){
          try {
              String response = in.readUTF();
-             System.out.println(response);
+             //System.out.println(response);
              notification(response);
          } catch (IOException ex) {
              Logger.getLogger(ClientSocket.class.getName()).log(Level.SEVERE, null, ex);
