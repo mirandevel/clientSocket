@@ -14,7 +14,9 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,38 +26,40 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
  * @author Usuario
  */
 public class BoardForm extends javax.swing.JFrame implements ResponseListener {
+
     /**
      * Creates new form BoardForm
      */
     ClientSocket clientSocket;
     String stringBoard;
-    Board board;
+    Game game;
     DiceController diceController;
 
     public BoardForm() {
         initComponents();
-        diceController=new DiceController(dice);
-
         clientSocket = Init.clientSocket;
+        diceController = new DiceController(dice, clientSocket);
+
         JSONObject obj = new JSONObject();
-        obj.put("action", "board");
+        obj.put("action", "game");
         try {
             clientSocket.send(obj.toJSONString());
         } catch (IOException ex) {
             System.out.println("Inténtelo otra vez");
         }
-        
+
         clientSocket.addListenner(this);
 
         //System.out.println(Arrays.toString(arr));
     }
- 
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -111,6 +115,7 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     }// </editor-fold>//GEN-END:initComponents
 
     private void diceMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_diceMouseClicked
+        if(dice.isEnabled())
         diceController.launch();
     }//GEN-LAST:event_diceMouseClicked
 
@@ -151,8 +156,56 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
 
     @Override
     public void onResponse(ResponseEvent event) {
-            System.out.println(event.getResponse());
-            board=new Board(event.getResponse(),this.getGraphics());  
+        try {
+            JSONParser parser = new JSONParser();
+            JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
+            String action = (String) jsonResult.get("action");
+            if (action.compareTo("game") == 0) {
+                boolean success = (boolean) jsonResult.get("success");
+                if (success) {
+                    String template = (String) jsonResult.get("template");
+                    List<Long> ids = (List<Long>) jsonResult.get("gamers");
+                    Long turn = (Long) jsonResult.get("turn");
+                    
+                    
+                    game = new Game(template, this.getGraphics());
+                    game.setTurn(turn);
+                    if (turn == LoginForm.clientHash) dice.setEnabled(true);
+                     else dice.setEnabled(false);
+                    int i = 1;
+                    for (long id : ids) {
+                        game.addGamer((int) id);
+                        game.getBoard().drawGamer(i, this.getGraphics());
+                        i++;
+                    }
+                }
+            }
+            if (action.compareTo("new_gamer") == 0) {
+                long id = (long) jsonResult.get("id");
+                if (id != LoginForm.clientHash) {
+                    game.addGamer((int) id);
+                    game.getBoard().drawGamer(game.gamers.size(), this.getGraphics());
+                }
+            }
+            if (action.compareTo("launch_dice") == 0) {
+                Long number = (Long) jsonResult.get("number");
+                Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
+                dice.setIcon(icon);
+            }
+            if (action.compareTo("finish_dice") == 0) {
+                Long number = (Long) jsonResult.get("number");
+                Long turn = (Long) jsonResult.get("turn");
+                System.out.println(turn);
+                game.setTurn(turn);
+                if (turn == LoginForm.clientHash) dice.setEnabled(true);
+                     else dice.setEnabled(false);
+                Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
+                dice.setIcon(icon);
+            }
+        } catch (ParseException ex) {
+            System.out.println("Intentelo otra vez");
+        }
+
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton dice;

@@ -20,6 +20,7 @@ import org.json.simple.parser.ParseException;
 public class LoginForm extends javax.swing.JFrame implements ResponseListener{
 
     ClientSocket clientSocket;
+    public static long clientHash;
 
     /**
      * Creates new form LoginForm
@@ -113,6 +114,7 @@ public class LoginForm extends javax.swing.JFrame implements ResponseListener{
             JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
             boolean success=(boolean) jsonResult.get("success");
             if(success){
+                clientHash=(long) jsonResult.get("id");
                 BoardForm boardForm=new BoardForm();
                 boardForm.setVisible(true);
                 clientSocket.removeListenner(this);
