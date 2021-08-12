@@ -15,6 +15,7 @@ import com.mycompany.loginsocket.tablero.Board;
 import com.mycompany.loginsocket.tablero.Gamer;
 
 import com.mycompany.loginsocket.tablero.Pawn;
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Insets;
 
@@ -25,10 +26,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-
 
 /**
  *
@@ -42,9 +44,10 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     ClientSocket clientSocket;
     String stringBoard;
     Game game;
+    int number;
     DiceController diceController;
     Gson gson = new Gson();
-    boolean move=false;
+    boolean move = false;
 
     public BoardForm() {
         initComponents();
@@ -64,11 +67,12 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     }
 
     @Override
-    public void paint(Graphics g){
-        if(game!=null){
+    public void paint(Graphics g) {
+        if (game != null) {
             game.getBoard().repaint(g);
         }
     }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -79,6 +83,9 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     private void initComponents() {
 
         dice = new javax.swing.JButton();
+        colorLabel = new javax.swing.JLabel();
+        turnoLabel = new javax.swing.JLabel();
+        accionLabel = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         addMouseListener(new java.awt.event.MouseAdapter() {
@@ -97,45 +104,81 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
             }
         });
 
+        colorLabel.setText("f");
+
+        turnoLabel.setText("ff");
+
+        accionLabel.setText("fff");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(140, 140, 140)
-                .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(459, Short.MAX_VALUE))
+                .addGap(22, 22, 22)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(accionLabel)
+                    .addComponent(turnoLabel))
+                .addGap(259, 259, 259)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addComponent(colorLabel)))
+                .addContainerGap(306, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(603, Short.MAX_VALUE)
+                .addContainerGap(606, Short.MAX_VALUE)
                 .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(68, 68, 68))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(colorLabel)
+                    .addComponent(turnoLabel))
+                .addGap(18, 18, 18)
+                .addComponent(accionLabel)
+                .addGap(8, 8, 8))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void diceMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_diceMouseClicked
-        if (dice.isEnabled() && !move)
+        if (dice.isEnabled() && !move) {
             diceController.launch();
+            turnoLabel.setText("");
+            accionLabel.setText("");
+        }
     }//GEN-LAST:event_diceMouseClicked
 
     private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
-        if(!move) return;
+        if (!move) {
+            return;
+        }
         Insets insets = this.getInsets();
-        List<Pawn> list=game.board.pawns.get(LoginForm.clientHash);
-        int x=evt.getPoint().x+insets.left;
-        int y=evt.getPoint().y;
-        for(Pawn p:list){
-            int x1=50 + 30 * (p.y+1);
-            int y1=150 + 30 * (p.x+1);
-            if(x>=x1 && y>=y1 && x<=x1+30 && y<=y1+30){
-                System.out.println(p.x+1);
-                System.out.println(p.y+1);
-                p.setX(p.x+1);
-                p.setY(p.y+1);
+        List<Pawn> list = game.board.pawns.get(LoginForm.clientHash);
+        int x = evt.getPoint().x + insets.left;
+        int y = evt.getPoint().y;
+        for (Pawn p : list) {
+            int x1 = 50 + 30 * (p.y + 1);
+            int y1 = 150 + 30 * (p.x + 1);
+            if (x >= x1 && y >= y1 && x <= x1 + 30 && y <= y1 + 30) {
+                try {
+                    /*System.out.println(p.x+1);
+                    System.out.println(p.y+1);
+                    p.setX(p.x+1);
+                    p.setY(p.y+1);*/
+                    if((number==5 && p.inBase()) || (number>0 && !p.inBase()) ){
+                        game.movePawn(p,number);
+                    }
+                    
+                    move = !move;
+                    turnoLabel.setText("Es tu turno de lanzar el dado");
+                } catch (IOException ex) {
+                    Logger.getLogger(BoardForm.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                break;
             }
         }
     }//GEN-LAST:event_formMouseClicked
@@ -177,63 +220,100 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
 
     @Override
     public void onResponse(ResponseEvent event) {
-           // JSONParser parser = new JSONParser();
-            //JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
-            //String action = (String) jsonResult.get("action");
-              
-            Response response = gson.fromJson(event.getResponse(), Response.class);
-            if (response.isAction(Response.GAME)) {
-                java.lang.reflect.Type type = new TypeToken<Game>() {}.getType();  
-                game=gson.fromJson((String)response.get("game"), type);
-                String template = (String) response.get("template");
-                  if (game.turnId == LoginForm.clientHash) {
-                    dice.setEnabled(true);
+
+        Response response = gson.fromJson(event.getResponse(), Response.class);
+        if (response.isAction(Response.GAME)) {
+            java.lang.reflect.Type type = new TypeToken<Game>() {
+            }.getType();
+            game = gson.fromJson((String) response.get("game"), type);
+            String template = (String) response.get("template");
+            if (game.turnId == LoginForm.clientHash) {
+                dice.setEnabled(true);
+            } else {
+                dice.setEnabled(false);
+            }
+
+            game.board.setTemplate(template, this.getGraphics());
+            int i = 1;
+            switch (game.gamers.size()) {
+                case 1 ->
+                    colorLabel.setText("Juegas con el color AMARILLO");
+                case 2 ->
+                    colorLabel.setText("Juegas con el color AZUL");
+                case 3 ->
+                    colorLabel.setText("Juegas con el color VERDE");
+                case 4 ->
+                    colorLabel.setText("Juegas con el color ROJO");
+            }
+            for (Integer key : game.gamers.keySet()) {
+                game.getBoard().drawGamer(i, key, this.getGraphics());
+                i++;
+            }
+        }
+        if (response.isAction(Response.NEW_GAMER)) {
+            java.lang.reflect.Type type = new TypeToken<Gamer>() {
+            }.getType();
+            Gamer gamer = gson.fromJson((String) response.get("gamer"), type);
+            type = new TypeToken<List<Pawn>>() {
+            }.getType();
+            List<Pawn> pawns = gson.fromJson((String) response.get("pawns"), type);
+            if (gamer.getClientHash() != LoginForm.clientHash) {
+                game.addGamer(gamer, pawns);
+                game.getBoard().drawGamer(game.gamers.size(), gamer.getClientHash(), this.getGraphics());
+            }
+        }
+        if (response.isAction(Response.LAUNCH_DICE)) {
+            number = ((Double) response.get("number")).intValue();
+            Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
+            dice.setIcon(icon);
+        }
+        if (response.isAction(Response.FINISH_DICE)) {
+            number = ((Double) response.get("number")).intValue();
+            int turn = ((Double) response.get("turn")).intValue();
+            System.out.println(turn);
+            if (turn == LoginForm.clientHash) {
+                dice.setEnabled(true);
+                turnoLabel.setText("Es tu turno de lanzar el dado");
+            } else {
+                dice.setEnabled(false);
+            }
+            
+            if (game.getTurn() == LoginForm.clientHash && turn == LoginForm.clientHash) {
+                if (game.allPawnsInBase()) {
+                    if (number == 5) {
+                        accionLabel.setText("mueve una pieza");
+                        move = true;
+                    }
                 } else {
-                    dice.setEnabled(false);
-                }
-                  //game.setBoard(new Board(game.getBoard().getTemplate(),this.getGraphics()));
-                  game.board.setTemplate(template, this.getGraphics());
-                  int i=1;
-                  for(Integer key : game.gamers.keySet()){
-                      game.getBoard().drawGamer(i,key ,this.getGraphics());
-                      i++;
-                  }
-            }
-            if (response.isAction(Response.NEW_GAMER)) {
-                java.lang.reflect.Type type = new TypeToken<Gamer>() {}.getType(); 
-                Gamer gamer=gson.fromJson((String)response.get("gamer"), type);
-                type = new TypeToken<List<Pawn>>() {}.getType(); 
-                List<Pawn> pawns=gson.fromJson((String)response.get("pawns"), type);
-                if (gamer.getClientHash()!= LoginForm.clientHash) {
-                    game.addGamer(gamer, pawns);
-                    game.getBoard().drawGamer(game.gamers.size(),gamer.getClientHash(), this.getGraphics());                    
+                    accionLabel.setText("mueve una pieza");
+                    move = true;
                 }
             }
-            if (response.isAction(Response.LAUNCH_DICE)) {
-                int number = ((Double) response.get("number")).intValue();
-                Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
-                dice.setIcon(icon);
+            
+            game.setTurn(turn);
+
+            Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
+            dice.setIcon(icon);
+        }
+        if (response.isAction(Response.MOVE_PAWN)) {
+            int id = ((Double) response.get("id")).intValue();
+            int turn = ((Double) response.get("turn")).intValue();
+            game.setTurn(turn);
+            Pawn pawn = gson.fromJson((String) response.get("pawn"), Pawn.class);
+            game.updatePawn(id, pawn, this.getGraphics());
+            if (turn == LoginForm.clientHash) {
+                dice.setEnabled(true);
+                turnoLabel.setText("Es tu turno de lanzar el dado");
+            } else {
+                dice.setEnabled(false);
             }
-            if (response.isAction(Response.FINISH_DICE)) {
-                int number = ((Double) response.get("number")).intValue();
-                int turn = ((Double) response.get("turn")).intValue();
-                System.out.println(turn);
-                game.setTurn(turn);
-                if (turn == LoginForm.clientHash) {
-                    dice.setEnabled(true);
-                } else {
-                    dice.setEnabled(false);
-                }
-                if(number==6){
-                    move=true;
-                }
-                Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
-                dice.setIcon(icon);
-            }
-      
+        }
 
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel accionLabel;
+    private javax.swing.JLabel colorLabel;
     private javax.swing.JButton dice;
+    private javax.swing.JLabel turnoLabel;
     // End of variables declaration//GEN-END:variables
 }

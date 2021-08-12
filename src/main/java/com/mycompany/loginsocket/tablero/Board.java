@@ -27,7 +27,7 @@ import javax.imageio.ImageIO;
  */
 public class Board {
 
-    int[][] board;
+    public int[][] board;
     public LinkedHashMap<Integer, List<Pawn>> pawns = new LinkedHashMap<>();
     String template;
 
@@ -130,26 +130,17 @@ public class Board {
         List<Pawn> pawns = this.pawns.get(gamerId);
         String name = "";
         switch (number) {
-            case 1 -> {
+            case 1 -> 
                 drawImage(50 + 30 * 1, 150 - 40, g, "profile_yellow");
-                //drawImage(0+8,0+31, g, "profile_yellow");
-                name = "pawn_yellow";
-            }
-            case 2 -> {
+            case 2 -> 
                 drawImage(50 + 30 * 14, 150 - 40, g, "profile_blue");
-                name = "pawn_blue";
-            }
-            case 3 -> {
+            case 3 -> 
                 drawImage(50 + 30 * 1, 150 + 30 * 16 + 10, g, "profile_green");
-                name = "pawn_green";
-            }
-            case 4 -> {
+            case 4 -> 
                 drawImage(50 + 30 * 14, 150 + 30 * 16 + 10, g, "profile_red");
-                name = "pawn_red";
-            }
         }
         for (Pawn p : pawns) {
-            drawImage(50 + 30 * (p.y+1), 150 + 30 * (p.x+1), g, name);
+            drawImage(50 + 30 * (p.y+1), 150 + 30 * (p.x+1), g, "pawn_"+p.color);
         }
     }
 
@@ -170,6 +161,9 @@ public class Board {
 
     public void setPawns(LinkedHashMap<Integer, List<Pawn>> pawns) {
         this.pawns = pawns;
+    }
+      public List<Pawn> getPawnsById(int gamerId) {
+        return pawns.get(gamerId);        
     }
 
 }

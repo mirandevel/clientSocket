@@ -59,6 +59,7 @@ public class DiceController {
 
     void send(int rand,String action) {
         try {
+            System.out.println("dice: "+rand);
             Response response=new Response(action);
             response.add("number", rand);
             clientSocket.send(gson.toJson(response));
