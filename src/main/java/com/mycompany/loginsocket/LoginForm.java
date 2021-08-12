@@ -5,8 +5,11 @@
  */
 package com.mycompany.loginsocket;
 
+import com.google.gson.Gson;
+import com.mycompany.loginsocket.models.Response;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONObject;
@@ -20,7 +23,8 @@ import org.json.simple.parser.ParseException;
 public class LoginForm extends javax.swing.JFrame implements ResponseListener{
 
     ClientSocket clientSocket;
-    public static long clientHash;
+    public static int clientHash;
+    Gson gson = new Gson();
 
     /**
      * Creates new form LoginForm
@@ -87,13 +91,12 @@ public class LoginForm extends javax.swing.JFrame implements ResponseListener{
     }// </editor-fold>//GEN-END:initComponents
 
     private void submitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_submitMouseClicked
-        JSONObject obj = new JSONObject();
-        obj.put("action", "login");
-        obj.put("email", this.email.getText());
-        obj.put("password", this.password.getText());
+        Response  response=new Response(Response.LOGIN);
+        response.add("email", this.email.getText());
+        response.add("password", this.password.getText());
         
         try {
-            clientSocket.send(obj.toJSONString());
+            clientSocket.send(gson.toJson(response));
         } catch (IOException ex) {
             System.out.println("Inténtelo otra vez");
         }
@@ -109,7 +112,19 @@ public class LoginForm extends javax.swing.JFrame implements ResponseListener{
 
     @Override
     public void onResponse(ResponseEvent event) {
-        try {
+        Response response = gson.fromJson(event.getResponse(), Response.class);
+        if((boolean)response.get("success")){
+            
+                clientHash=((Double) response.get("id")).intValue();
+                BoardForm boardForm=new BoardForm();
+                boardForm.setVisible(true);
+                clientSocket.removeListenner(this);
+                this.dispose();
+                System.out.println("Inicio exitoso");
+        }else{
+        System.out.println("Intentelo otra vez");
+    }
+       /* try {
             JSONParser parser = new JSONParser();
             JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
             boolean success=(boolean) jsonResult.get("success");
@@ -125,6 +140,6 @@ public class LoginForm extends javax.swing.JFrame implements ResponseListener{
             }  
         } catch (ParseException ex) {
            System.out.println("Intentelo otra vez");
-        }
+        }*/
     }
 }

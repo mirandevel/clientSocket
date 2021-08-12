@@ -6,28 +6,29 @@
 package com.mycompany.loginsocket;
 
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
+import com.google.gson.reflect.TypeToken;
+
 import com.mycompany.loginsocket.controllers.DiceController;
+import com.mycompany.loginsocket.models.Response;
 import com.mycompany.loginsocket.tablero.Board;
-import java.awt.Color;
+import com.mycompany.loginsocket.tablero.Gamer;
+
+import com.mycompany.loginsocket.tablero.Pawn;
 import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.io.File;
+import java.awt.Insets;
+
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.imageio.ImageIO;
+import java.util.Map;
+
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+
 
 /**
  *
@@ -42,16 +43,17 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     String stringBoard;
     Game game;
     DiceController diceController;
+    Gson gson = new Gson();
+    boolean move=false;
 
     public BoardForm() {
         initComponents();
         clientSocket = Init.clientSocket;
         diceController = new DiceController(dice, clientSocket);
 
-        JSONObject obj = new JSONObject();
-        obj.put("action", "game");
+        Response response = new Response(Response.GAME);
         try {
-            clientSocket.send(obj.toJSONString());
+            clientSocket.send(gson.toJson(response));
         } catch (IOException ex) {
             System.out.println("Inténtelo otra vez");
         }
@@ -61,6 +63,12 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
         //System.out.println(Arrays.toString(arr));
     }
 
+    @Override
+    public void paint(Graphics g){
+        if(game!=null){
+            game.getBoard().repaint(g);
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -73,18 +81,13 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
         dice = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        dice.setIcon(new javax.swing.JLabel() {
-            public javax.swing.Icon getIcon() {
-                try {
-                    return new javax.swing.ImageIcon(
-                        new java.net.URL("file:/D:/UNIVERSIDAD/2020-3/Distribuidos/tareas/LoginSocket/src/main/java/com/mycompany/loginsocket/images/dice_1.png")
-                    );
-                } catch (java.net.MalformedURLException e) {
-                }
-                return null;
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                formMouseClicked(evt);
             }
-        }.getIcon());
+        });
+
+        dice.setIcon(new javax.swing.ImageIcon("D:\\UNIVERSIDAD\\2020-3\\Distribuidos\\tareas\\LoginSocket\\src\\main\\java\\com\\mycompany\\loginsocket\\images\\dice_1.png")); // NOI18N
         dice.setMargin(new java.awt.Insets(0, 0, 0, 0));
         dice.setMaximumSize(new java.awt.Dimension(45, 40));
         dice.setMinimumSize(new java.awt.Dimension(30, 30));
@@ -106,7 +109,7 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(615, Short.MAX_VALUE)
+                .addContainerGap(603, Short.MAX_VALUE)
                 .addComponent(dice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(68, 68, 68))
         );
@@ -115,9 +118,27 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
     }// </editor-fold>//GEN-END:initComponents
 
     private void diceMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_diceMouseClicked
-        if(dice.isEnabled())
-        diceController.launch();
+        if (dice.isEnabled() && !move)
+            diceController.launch();
     }//GEN-LAST:event_diceMouseClicked
+
+    private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
+        if(!move) return;
+        Insets insets = this.getInsets();
+        List<Pawn> list=game.board.pawns.get(LoginForm.clientHash);
+        int x=evt.getPoint().x+insets.left;
+        int y=evt.getPoint().y;
+        for(Pawn p:list){
+            int x1=50 + 30 * (p.y+1);
+            int y1=150 + 30 * (p.x+1);
+            if(x>=x1 && y>=y1 && x<=x1+30 && y<=y1+30){
+                System.out.println(p.x+1);
+                System.out.println(p.y+1);
+                p.setX(p.x+1);
+                p.setY(p.y+1);
+            }
+        }
+    }//GEN-LAST:event_formMouseClicked
 
     /**
      * @param args the command line arguments
@@ -156,55 +177,60 @@ public class BoardForm extends javax.swing.JFrame implements ResponseListener {
 
     @Override
     public void onResponse(ResponseEvent event) {
-        try {
-            JSONParser parser = new JSONParser();
-            JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
-            String action = (String) jsonResult.get("action");
-            if (action.compareTo("game") == 0) {
-                boolean success = (boolean) jsonResult.get("success");
-                if (success) {
-                    String template = (String) jsonResult.get("template");
-                    List<Long> ids = (List<Long>) jsonResult.get("gamers");
-                    Long turn = (Long) jsonResult.get("turn");
-                    
-                    
-                    game = new Game(template, this.getGraphics());
-                    game.setTurn(turn);
-                    if (turn == LoginForm.clientHash) dice.setEnabled(true);
-                     else dice.setEnabled(false);
-                    int i = 1;
-                    for (long id : ids) {
-                        game.addGamer((int) id);
-                        game.getBoard().drawGamer(i, this.getGraphics());
-                        i++;
-                    }
+           // JSONParser parser = new JSONParser();
+            //JSONObject jsonResult = (JSONObject) parser.parse(event.getResponse());
+            //String action = (String) jsonResult.get("action");
+              
+            Response response = gson.fromJson(event.getResponse(), Response.class);
+            if (response.isAction(Response.GAME)) {
+                java.lang.reflect.Type type = new TypeToken<Game>() {}.getType();  
+                game=gson.fromJson((String)response.get("game"), type);
+                String template = (String) response.get("template");
+                  if (game.turnId == LoginForm.clientHash) {
+                    dice.setEnabled(true);
+                } else {
+                    dice.setEnabled(false);
+                }
+                  //game.setBoard(new Board(game.getBoard().getTemplate(),this.getGraphics()));
+                  game.board.setTemplate(template, this.getGraphics());
+                  int i=1;
+                  for(Integer key : game.gamers.keySet()){
+                      game.getBoard().drawGamer(i,key ,this.getGraphics());
+                      i++;
+                  }
+            }
+            if (response.isAction(Response.NEW_GAMER)) {
+                java.lang.reflect.Type type = new TypeToken<Gamer>() {}.getType(); 
+                Gamer gamer=gson.fromJson((String)response.get("gamer"), type);
+                type = new TypeToken<List<Pawn>>() {}.getType(); 
+                List<Pawn> pawns=gson.fromJson((String)response.get("pawns"), type);
+                if (gamer.getClientHash()!= LoginForm.clientHash) {
+                    game.addGamer(gamer, pawns);
+                    game.getBoard().drawGamer(game.gamers.size(),gamer.getClientHash(), this.getGraphics());                    
                 }
             }
-            if (action.compareTo("new_gamer") == 0) {
-                long id = (long) jsonResult.get("id");
-                if (id != LoginForm.clientHash) {
-                    game.addGamer((int) id);
-                    game.getBoard().drawGamer(game.gamers.size(), this.getGraphics());
-                }
-            }
-            if (action.compareTo("launch_dice") == 0) {
-                Long number = (Long) jsonResult.get("number");
+            if (response.isAction(Response.LAUNCH_DICE)) {
+                int number = ((Double) response.get("number")).intValue();
                 Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
                 dice.setIcon(icon);
             }
-            if (action.compareTo("finish_dice") == 0) {
-                Long number = (Long) jsonResult.get("number");
-                Long turn = (Long) jsonResult.get("turn");
+            if (response.isAction(Response.FINISH_DICE)) {
+                int number = ((Double) response.get("number")).intValue();
+                int turn = ((Double) response.get("turn")).intValue();
                 System.out.println(turn);
                 game.setTurn(turn);
-                if (turn == LoginForm.clientHash) dice.setEnabled(true);
-                     else dice.setEnabled(false);
+                if (turn == LoginForm.clientHash) {
+                    dice.setEnabled(true);
+                } else {
+                    dice.setEnabled(false);
+                }
+                if(number==6){
+                    move=true;
+                }
                 Icon icon = new ImageIcon(Utils.path + "dice_" + number + ".png");
                 dice.setIcon(icon);
             }
-        } catch (ParseException ex) {
-            System.out.println("Intentelo otra vez");
-        }
+      
 
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables

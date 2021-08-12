@@ -6,6 +6,7 @@
 package com.mycompany.loginsocket.tablero;
 
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 import com.mycompany.loginsocket.BoardForm;
 import com.mycompany.loginsocket.Utils;
 import java.awt.Graphics;
@@ -13,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -26,102 +28,85 @@ import javax.imageio.ImageIO;
 public class Board {
 
     int[][] board;
-    HashMap<Integer, List<Pawn>> pawns = new HashMap<>();
+    public LinkedHashMap<Integer, List<Pawn>> pawns = new LinkedHashMap<>();
+    String template;
 
     public Board(String stringBoard, Graphics g) {
+        this.template = stringBoard;
         Gson parser = new Gson();
         this.board = parser.fromJson(stringBoard, int[][].class);
         paint(g);
     }
 
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template, Graphics g) {
+        this.template = template;
+        Gson parser = new Gson();
+        this.board = parser.fromJson(template, int[][].class);
+        paint(g);
+    }
+
     public void paint(Graphics g) {
-        if (board == null) {
-            return;
-        }
         int fil = 1;
         int col = 1;
         for (int[] data : board) {
             for (int i = 1; i <= data.length; i++) {
                 String name = "";
                 switch (data[i - 1]) {
-                    case -1:
+                    case -1 ->
                         name = "base_yellow";
-                        break;
-                    case -2:
+                    case -2 ->
                         name = "base_blue";
-                        break;
-                    case -3:
+                    case -3 ->
                         name = "base_green";
-                        break;
-                    case -4:
+                    case -4 ->
                         name = "base_red";
-                        break;
-                    case -5:
+                    case -5 ->
                         name = "center";
-                        break;
-                    case 0:
+                    case 0 ->
                         name = "rectangle_white";
-                        break;
-                    case 1:
+                    case 1 ->
                         name = "rectangle_yellow";
-                        break;
-                    case 11:
+                    case 11 ->
                         name = "star_yellow";
-                        break;
-                    case 111:
+                    case 111 ->
                         name = "arrow_yellow";
-                        break;
-                    case 1111:
+                    case 1111 ->
                         name = "pawn_yellow";
-                        break;
-                    case 2:
+                    case 2 ->
                         name = "rectangle_blue";
-                        break;
-                    case 22:
+                    case 22 ->
                         name = "star_blue";
-                        break;
-                    case 222:
+                    case 222 ->
                         name = "arrow_blue";
-                        break;
-                    case 2222:
+                    case 2222 ->
                         name = "pawn_blue";
-                        break;
-                    case 3:
+                    case 3 ->
                         name = "rectangle_green";
-                        break;
-                    case 33:
+                    case 33 ->
                         name = "star_green";
-                        break;
-                    case 333:
+                    case 333 ->
                         name = "arrow_green";
-                        break;
-                    case 3333:
+                    case 3333 ->
                         name = "pawn_green";
-                        break;
-                    case 4:
+                    case 4 ->
                         name = "rectangle_red";
-                        break;
-                    case 44:
+                    case 44 ->
                         name = "star_red";
-                        break;
-                    case 444:
+                    case 444 ->
                         name = "arrow_red";
-                        break;
-                    case 4444:
+                    case 4444 ->
                         name = "pawn_red";
-                        break;
-                    case 10:
+                    case 10 ->
                         name = "star_white";
-                        break;
                 }
                 if (!name.isEmpty()) {
                     drawImage(50 + 30 * col, 150 + 30 * fil, g, name);
                 }
                 col++;
-                /*        if (i % 15 == 0) {
-                fil++;
-                col = 1;
-            }*/
             }
             fil++;
             col = 1;
@@ -141,23 +126,50 @@ public class Board {
         }
     }
 
-    public void drawGamer(int number, Graphics g) {
+    public void drawGamer(int number, int gamerId, Graphics g) {
+        List<Pawn> pawns = this.pawns.get(gamerId);
+        String name = "";
         switch (number) {
-            case 1:
-                drawImage(50 + 30 * 1, 150 - 40, g, "profile");
-                break;
-            case 2:
-                drawImage(50 + 30 * 14, 150 - 40, g, "profile");
-                break;
-            case 3:
-                drawImage(50 + 30 * 1, 150 + 30 * 16 + 10, g, "profile");
-                break;
-            case 4:
-                drawImage(50 + 30 * 14, 150 + 30 * 16 + 10, g, "profile");
-                break;
-
+            case 1 -> {
+                drawImage(50 + 30 * 1, 150 - 40, g, "profile_yellow");
+                //drawImage(0+8,0+31, g, "profile_yellow");
+                name = "pawn_yellow";
+            }
+            case 2 -> {
+                drawImage(50 + 30 * 14, 150 - 40, g, "profile_blue");
+                name = "pawn_blue";
+            }
+            case 3 -> {
+                drawImage(50 + 30 * 1, 150 + 30 * 16 + 10, g, "profile_green");
+                name = "pawn_green";
+            }
+            case 4 -> {
+                drawImage(50 + 30 * 14, 150 + 30 * 16 + 10, g, "profile_red");
+                name = "pawn_red";
+            }
         }
+        for (Pawn p : pawns) {
+            drawImage(50 + 30 * (p.y+1), 150 + 30 * (p.x+1), g, name);
+        }
+    }
 
+ 
+
+    public void repaint(Graphics g) {
+        paint(g);
+        int i = 1;
+        for (Integer key : pawns.keySet()) {
+            drawGamer(i, key, g);
+            i++;
+        }
+    }
+
+    public void addPawns(int clientId, List<Pawn> pawns) {
+        this.pawns.put(clientId, pawns);
+    }
+
+    public void setPawns(LinkedHashMap<Integer, List<Pawn>> pawns) {
+        this.pawns = pawns;
     }
 
 }

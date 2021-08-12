@@ -5,8 +5,10 @@
  */
 package com.mycompany.loginsocket.controllers;
 
+import com.google.gson.Gson;
 import com.mycompany.loginsocket.ClientSocket;
 import com.mycompany.loginsocket.Utils;
+import com.mycompany.loginsocket.models.Response;
 import java.io.IOException;
 import java.util.Random;
 import java.util.Timer;
@@ -26,6 +28,7 @@ public class DiceController {
 
     JButton dice;
     ClientSocket clientSocket;
+     Gson gson = new Gson();
 
     public DiceController(JButton dice, ClientSocket clientSocket) {
         this.dice = dice;
@@ -42,11 +45,11 @@ public class DiceController {
                 int rand = r.nextInt(6) + 1;
                 i++;
                 if (i == 10) {
-                    send(rand,"finish_dice");
+                    send(rand,Response.FINISH_DICE);
                     timer.cancel();
                     
                 }else{
-                    send(rand,"launch_dice");
+                    send(rand,Response.LAUNCH_DICE);
                 }
             }
         };
@@ -56,10 +59,9 @@ public class DiceController {
 
     void send(int rand,String action) {
         try {
-            JSONObject obj = new JSONObject();
-            obj.put("action", action);
-            obj.put("number", rand);
-            clientSocket.send(obj.toJSONString());
+            Response response=new Response(action);
+            response.add("number", rand);
+            clientSocket.send(gson.toJson(response));
         } catch (IOException ex) {
             Logger.getLogger(DiceController.class.getName()).log(Level.SEVERE, null, ex);
         }
